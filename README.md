@@ -1,91 +1,512 @@
-DevOps Practice Project – Dist Directory
+# Brain Tasks App - DevOps Deployment using AWS
 
-This repository contains the production-ready build files (dist folder) for DevOps practice and deployment exercises.
+## Project Overview
 
-It is intentionally structured to help learners focus on CI/CD pipelines, hosting, containerization, and infrastructure setup rather than application development.
+This project demonstrates the complete deployment of a React application using modern DevOps practices on AWS.
 
-📁 What This Repository Contains
+The application is containerized using Docker, stored in Amazon ECR, deployed on Amazon EKS using Kubernetes, and automated using AWS CodeBuild and CodePipeline.
 
-dist/ – Compiled and production-ready static files
+---
 
-HTML
+# Architecture
 
-CSS
+```
 
-JavaScript
+GitHub Repository
+│
+▼
+AWS CodePipeline
+│
+▼
+AWS CodeBuild
+│
+▼
+Docker Build
+│
+▼
+Amazon ECR
+│
+▼
+Amazon EKS Cluster
+│
+▼
+Kubernetes Deployment
+│
+▼
+Kubernetes Service (LoadBalancer)
+│
+▼
+React Application
 
-Assets (images, fonts, etc.)
+```
 
-These files are ready to deploy to:
+---
 
-Web servers (Nginx / Apache)
+# Technologies Used
 
-Cloud platforms (AWS S3, Azure Blob, GCP Storage)
+- React.js
+- Docker
+- Amazon Elastic Container Registry (ECR)
+- Amazon Elastic Kubernetes Service (EKS)
+- Kubernetes
+- AWS CodeBuild
+- AWS CodePipeline
+- AWS CloudWatch
+- GitHub
 
-Containerized environments (Docker + Nginx)
+---
 
-Kubernetes clusters
+# Project Structure
 
-CI/CD pipeline demonstrations
+```
 
-🎯 Purpose of This Repository
+Brain-Tasks-App/
+│
+├── public/
+├── src/
+├── Dockerfile
+├── deployment.yaml
+├── service.yaml
+├── buildspec.yml
+├── package.json
+├── package-lock.json
+├── README.md
 
-This repository is designed for:
+```
 
-DevOps beginners
+---
 
-CI/CD practice
+# Step 1 Clone Repository
 
-Deployment pipeline testing
+Clone the repository from GitHub.
 
-Docker & Kubernetes deployment exercises
+```bash
+git clone https://github.com/Theresa23-2025/Brain-Tasks-App.git
 
-Web server configuration practice
+cd Brain-Tasks-App
+```
 
-Reverse proxy and load balancer setup
+---
 
-The goal is to simulate real-world deployment scenarios using already built application files.
+# Step 2 Install Dependencies
 
-❓ Why is there NO package.json?
+```bash
+npm install
+```
 
-You may notice that this repository does not include:
+---
 
-package.json
+# Step 3 Run Application
 
-node_modules
+```bash
+npm start
+```
 
-Source code (src/)
+Open
 
-Build tools configuration
+```
+http://localhost:3000
+```
 
-✅ Reason:
+Verify that the React application is running.
 
-This repository only contains the final production build output (dist), not the development source code.
+---
 
-In a typical project:
+# Step 4 Dockerize Application
 
-Developers write source code.
+Dockerfile
 
-The project is built using tools like:
+```dockerfile
+FROM node:20
 
-Node.js
+WORKDIR /app
 
-Webpack
+COPY package*.json ./
 
-Vite
+RUN npm install
 
-React (or other frameworks)
+COPY . .
 
-A dist/ folder is generated.
+EXPOSE 3000
 
-Only the production build is deployed to servers.
+CMD ["npm","start"]
+```
 
-This repository represents step 4 only.
+Build Docker Image
 
-Since this is already the compiled output:
+```bash
+docker build -t brain-task-app .
+```
 
-No dependencies are required
+Check Images
 
-No build process is required
+```bash
+docker images
+```
 
-No package.json is needed
+Run Container
+
+```bash
+docker run -d -p 3000:3000 brain-task-app
+```
+
+Open
+
+```
+http://localhost:3000
+```
+
+---
+
+# Step 5 Create Amazon ECR Repository
+
+Repository Name
+
+```
+brain-task-app
+```
+
+Login to ECR
+
+```bash
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 095907291932.dkr.ecr.us-west-2.amazonaws.com
+```
+
+Tag Image
+
+```bash
+docker tag brain-task-app:latest 095907291932.dkr.ecr.us-west-2.amazonaws.com/brain-task-app:latest
+```
+
+Push Image
+
+```bash
+docker push 095907291932.dkr.ecr.us-west-2.amazonaws.com/brain-task-app:latest
+```
+
+---
+
+# Step 6 Create Amazon EKS Cluster
+
+Create EKS Cluster
+
+```
+Cluster Name : brain-cluster
+Region : us-west-2
+```
+
+Update kubeconfig
+
+```bash
+aws eks update-kubeconfig --region us-west-2 --name brain-cluster
+```
+
+Verify Nodes
+
+```bash
+kubectl get nodes
+```
+
+Expected Output
+
+```
+Ready
+Ready
+```
+
+---
+
+# Step 7 Kubernetes Deployment
+
+deployment.yaml
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: brain-task-app
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: brain-task-app
+
+  template:
+    metadata:
+      labels:
+        app: brain-task-app
+
+    spec:
+      containers:
+      - name: brain-task-app
+        image: 095907291932.dkr.ecr.us-west-2.amazonaws.com/brain-task-app:latest
+
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 3000
+```
+
+Deploy
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+---
+
+# Step 8 Kubernetes Service
+
+service.yaml
+
+```yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: brain-task-service
+
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+spec:
+  type: LoadBalancer
+
+  loadBalancerClass: eks.amazonaws.com/nlb
+
+  selector:
+    app: brain-task-app
+
+  ports:
+  - port: 80
+    targetPort: 3000
+```
+
+Deploy Service
+
+```bash
+kubectl apply -f service.yaml
+```
+
+Verify
+
+```bash
+kubectl get svc
+```
+
+---
+
+# Step 9 LoadBalancer
+
+Get External URL
+
+```bash
+kubectl get svc
+```
+
+Example
+
+```
+k8s-default-braintas-xxxxxxxx.elb.us-west-2.amazonaws.com
+```
+
+Open in Browser
+
+```
+http://LoadBalancer-DNS
+```
+
+---
+
+# Step 10 AWS CodeBuild
+
+Create Build Project
+
+Project Name
+
+```
+brain-task-build
+```
+
+Environment
+
+```
+Amazon Linux
+
+Managed Image
+
+Privileged Mode Enabled
+```
+
+Source
+
+```
+GitHub Repository
+```
+
+---
+
+# Step 11 buildspec.yml
+
+```yaml
+version: 0.2
+
+phases:
+
+  pre_build:
+
+    commands:
+
+      - echo Logging into Amazon ECR
+
+      - aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 095907291932.dkr.ecr.us-west-2.amazonaws.com
+
+  build:
+
+    commands:
+
+      - docker build -t brain-task-app .
+
+      - docker tag brain-task-app:latest 095907291932.dkr.ecr.us-west-2.amazonaws.com/brain-task-app:latest
+
+  post_build:
+
+    commands:
+
+      - docker push 095907291932.dkr.ecr.us-west-2.amazonaws.com/brain-task-app:latest
+```
+
+---
+
+# Step 12 Push Code to GitHub
+
+```bash
+git add .
+
+git commit -m "Initial Commit"
+
+git push origin main
+```
+
+---
+
+# Step 13 AWS CodePipeline
+
+Pipeline Flow
+
+```
+GitHub
+
+↓
+
+CodePipeline
+
+↓
+
+CodeBuild
+
+↓
+
+Docker Build
+
+↓
+
+Push Image to Amazon ECR
+
+↓
+
+Deploy to Amazon EKS
+
+↓
+
+Application Running
+```
+
+Pipeline Name
+
+```
+brain-task-pipeline
+```
+
+---
+
+# Step 14 CloudWatch
+
+Monitor
+
+- CodeBuild Logs
+- CodePipeline Logs
+- Application Logs
+
+---
+
+# Verification Commands
+
+Check Pods
+
+```bash
+kubectl get pods
+```
+
+Check Services
+
+```bash
+kubectl get svc
+```
+
+Check Deployment
+
+```bash
+kubectl get deployments
+```
+
+Describe Service
+
+```bash
+kubectl describe svc brain-task-service
+```
+
+---
+
+# Application URLs
+
+Local Application
+
+```
+http://localhost:3000
+```
+
+Production Application
+
+```
+http://k8s-default-braintas-d46fd04f1a-c0f74e6de17b1b2b.elb.us-west-2.amazonaws.com/
+```
+
+---
+
+# Screenshots
+
+Include the following screenshots:
+
+- GitHub Repository
+- Docker Images
+- Docker Container Running
+- Amazon ECR Repository
+- Amazon EKS Cluster
+- kubectl get nodes
+- kubectl get pods
+- kubectl get svc
+- LoadBalancer URL
+- React Application Running
+- CodeBuild Success
+- CodePipeline Success
+- CloudWatch Logs
+
+---
+
+# Conclusion
+
+The React application was successfully containerized using Docker, stored in Amazon ECR, deployed on Amazon EKS using Kubernetes, and automated with AWS CodeBuild and CodePipeline. CloudWatch was used for monitoring build and deployment logs.
