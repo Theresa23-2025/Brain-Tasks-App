@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  brain-tasks-app:
+    # Use the Dockerfile in this directory to build the image
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Map host port 8080 to container port 80
+    ports:
+      - "8080:80"
+    # Keep the container running in the foreground via Nginx
+    restart: unless-stopped

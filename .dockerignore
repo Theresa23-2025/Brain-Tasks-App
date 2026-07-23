@@ -1,0 +1,17 @@
+# Exclude Git metadata and local editor files
+.git
+.gitignore
+.vscode/
+
+# Exclude node and build artifacts that are not part of the production output
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Exclude source files and any files outside the production build folder
+src/
+public/
+*.md
