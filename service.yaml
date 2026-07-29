@@ -8,10 +8,9 @@ metadata:
 
 spec:
   type: LoadBalancer
-  loadBalancerClass: eks.amazonaws.com/nlb
 
   selector:
-    app: brain-task-app
+    app: brain-app
 
   ports:
     - protocol: TCP
