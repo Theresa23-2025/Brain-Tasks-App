@@ -1,1053 +1,343 @@
-# 🧠 Brain Tasks App
+# Brain Tasks App — AWS EKS Deployment
 
-A modern task management web application deployed using a complete DevOps workflow with **GitHub, Jenkins, Docker, Nginx, GitHub Pages, and AWS ECR**.
+A containerized Brain Tasks application deployed to Amazon Elastic Kubernetes Service (Amazon EKS), with an image stored in Amazon Elastic Container Registry (Amazon ECR) and a public AWS Load Balancer exposing the application.
 
-The project demonstrates source-code management, automated CI/CD, containerization, web-server deployment, and public static hosting.
+## Project Overview
 
----
+This project demonstrates a cloud-native deployment workflow:
 
-## 🌐 Live Demo
+1. Package the application into a Docker image.
+2. Push the image to Amazon ECR.
+3. Run the application on an Amazon EKS Kubernetes cluster.
+4. Expose the application through a Kubernetes `LoadBalancer` Service.
+5. Verify the running application using the load balancer's DNS name.
 
-### 🚀 Brain Tasks App
+## Architecture
 
-**Live Application:**  
-https://theresa23-2025.github.io/Brain-Tasks-App/
-
-**GitHub Repository:**  
-https://github.com/Theresa23-2025/Brain-Tasks-App
-
----
-
-## 📌 Project Overview
-
-**Brain Tasks App** is a task management web application designed to provide a simple and responsive interface for organizing tasks.
-
-The application includes a clean dashboard where tasks can be viewed, searched, and filtered based on their status.
-
-This project also demonstrates a complete deployment workflow using modern DevOps tools.
-
-### Deployment workflow
-
-```text
-Developer
-    ↓
-Git
-    ↓
-GitHub Repository
-    ↓
-Jenkins CI/CD
-    ↓
-Docker Build
-    ↓
-Nginx Container
-    ↓
-Local Deployment
+```mermaid
+flowchart TD
+    User[User's Browser] --> LB[AWS Load Balancer]
+    LB --> SVC[Kubernetes Service: brain-tasks-service]
+    SVC --> POD[Deployment: brain-tasks-app]
+    POD --> ECR[Amazon ECR Image Repository]
+    POD --> NODE[Amazon EKS Worker Node]
+    NODE --> CLUSTER[brain-tasks-cluster]
 ```
 
-For public hosting:
+## Deployment Details
 
-```text
-GitHub Repository
-    ↓
-dist/
-    ↓
-gh-pages Branch
-    ↓
-GitHub Pages
-    ↓
-Public Live Application
-```
-
----
-
-# ✨ Application Features
-
-The Brain Tasks App provides the following user interface features:
-
-- Task management dashboard
-- Create Task interface
-- Task search
-- All Tasks filter
-- Pending Tasks filter
-- Completed Tasks filter
-- Priority Tasks filter
-- Responsive user interface
-- Clean task management layout
-
----
-
-# 🛠️ Technology Stack
-
-| Technology | Purpose |
+| Resource | Value |
 |---|---|
-| Git | Version control |
-| GitHub | Remote source-code repository |
-| Jenkins | CI/CD automation |
-| Jenkinsfile | Declarative CI/CD pipeline definition |
-| AWS ECR | Docker image registry |
-| Poll SCM | Automatic Git change detection |
-| Docker | Application containerization |
-| Docker Compose | Container configuration |
-| Nginx | Production web server |
-| GitHub Pages | Public static hosting |
-| React Router | Client-side routing |
-| GitHub `main` Branch | Main project version |
-| GitHub `gh-pages` Branch | Public deployment version |
+| AWS Region | `ap-southeast-2` |
+| EKS Cluster | `brain-tasks-cluster` |
+| EKS Node Group | `brain-tasks-nodes` |
+| Kubernetes Deployment | `brain-tasks-app` |
+| Kubernetes Service | `brain-tasks-service` |
+| ECR Repository | `brain-tasks-app` |
+| Container Image | `853491227853.dkr.ecr.ap-southeast-2.amazonaws.com/brain-tasks-app:latest` |
+| Service Type | `LoadBalancer` |
+| Load Balancer DNS | `a423d723667e04e18a592adf6030d8ea-554931457.ap-southeast-2.elb.amazonaws.com` |
 
----
+> **Note:** The public load balancer DNS is environment-specific and may change if the Service or load balancer is recreated. AWS resources can incur charges while running.
 
-# 🏗️ Deployment Architecture
+## Technology Stack
 
-```text
-                     ┌──────────────────────┐
-                     │      Developer       │
-                     └──────────┬───────────┘
-                                │
-                                │ Git Push
-                                ▼
-                     ┌──────────────────────┐
-                     │  GitHub Repository   │
-                     │     main branch      │
-                     └──────────┬───────────┘
-                                │
-                ┌───────────────┴────────────────┐
-                │                                │
-                ▼                                ▼
-      ┌──────────────────┐             ┌──────────────────┐
-      │     Jenkins      │             │   dist Folder    │
-      │      CI/CD       │             └────────┬─────────┘
-      └────────┬─────────┘                      │
-               │                                ▼
-               │                       ┌──────────────────┐
-               │                       │ gh-pages Branch  │
-               ▼                       └────────┬─────────┘
-      ┌──────────────────┐                      │
-      │   Docker Build   │                      ▼
-      └────────┬─────────┘             ┌──────────────────┐
-               │                       │   GitHub Pages   │
-               ▼                       └────────┬─────────┘
-      ┌──────────────────┐                      │
-      │ Nginx Container  │                      ▼
-      └────────┬─────────┘             ┌──────────────────┐
-               │                       │ Public Live App  │
-               ▼                       └──────────────────┘
-      ┌──────────────────┐
-      │ localhost:8080   │
-      └──────────────────┘
-```
+- Docker — application containerization
+- Amazon ECR — container image registry
+- Amazon EKS — managed Kubernetes control plane
+- Kubernetes Deployment and Service — application orchestration and exposure
+- AWS Load Balancer — public application access
+- `kubectl` and AWS CLI — deployment and cluster management
 
----
+## Prerequisites
 
-# 🔄 Complete CI/CD Workflow
+Install and configure:
 
-The project uses GitHub, Jenkins, and Docker to create an automated deployment workflow.
+- AWS CLI
+- `kubectl`
+- Docker
+- `eksctl` (if creating the cluster from the command line)
+- An AWS identity with permissions to manage ECR, EKS, EC2, IAM, and load balancers
 
-## 1. Developer Updates Project
-
-Application files are maintained in the local project directory.
-
-```text
-R:\Deploy\Therasha\Brain-Tasks-App
-```
-
-After making changes, Git is used to track the modifications.
-
----
-
-## 2. Git Version Control
-
-Check project status:
+Check the tools:
 
 ```bash
-git status
+aws --version
+kubectl version --client
+docker --version
+eksctl version
 ```
 
-Stage changes:
+Configure AWS credentials and the desired region:
 
 ```bash
-git add .
+aws configure
+aws sts get-caller-identity
+aws configure set region ap-southeast-2
 ```
 
-Commit changes:
+Use least-privilege IAM permissions and avoid committing AWS credentials or access keys to source control.
+
+## Build and Run Locally
+
+Run these commands from the application directory. Adjust the Docker build context or port mapping to match the application's Dockerfile and configured port.
 
 ```bash
-git commit -m "Update Brain Tasks App"
+docker build -t brain-tasks-app:latest .
+docker run --rm -p 8080:8080 brain-tasks-app:latest
 ```
 
-Push changes:
+Open `http://localhost:8080` if the app listens on port `8080`. If your application uses another port, update the port mapping accordingly.
+
+## Push the Docker Image to Amazon ECR
+
+Set the image variables:
 
 ```bash
-git push origin main
+AWS_REGION=ap-southeast-2
+AWS_ACCOUNT_ID=853491227853
+ECR_REPOSITORY=brain-tasks-app
+IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest
 ```
 
-The latest version is then available in the GitHub `main` branch.
+Create the ECR repository if it does not already exist:
 
----
-
-## 3. GitHub Repository
-
-GitHub acts as the central source-code repository for the project.
-
-### Repository
-
-```text
-https://github.com/Theresa23-2025/Brain-Tasks-App
+```bash
+aws ecr describe-repositories \
+  --repository-names "${ECR_REPOSITORY}" \
+  --region "${AWS_REGION}" \
+|| aws ecr create-repository \
+  --repository-name "${ECR_REPOSITORY}" \
+  --region "${AWS_REGION}"
 ```
 
-### Main Branch
+Authenticate Docker, build, tag, and push:
 
-```text
-main
+```bash
+aws ecr get-login-password --region "${AWS_REGION}" \
+  | docker login --username AWS --password-stdin \
+    "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+docker build -t "${ECR_REPOSITORY}:latest" .
+docker tag "${ECR_REPOSITORY}:latest" "${IMAGE_URI}"
+docker push "${IMAGE_URI}"
 ```
 
-The `main` branch contains the primary project and deployment configuration.
+Confirm that the image exists:
 
-### Deployment Branch
-
-```text
-gh-pages
+```bash
+aws ecr describe-images \
+  --repository-name "${ECR_REPOSITORY}" \
+  --region "${AWS_REGION}"
 ```
 
-The `gh-pages` branch contains the static production files used for the public GitHub Pages deployment.
+## Connect `kubectl` to EKS
 
----
+Update the local kubeconfig:
 
-# ⚙️ Jenkins CI/CD
-
-Jenkins is used as the Continuous Integration and Continuous Deployment automation server.
-
-### Jenkins URL
-
-```text
-http://localhost:8081
+```bash
+aws eks update-kubeconfig \
+  --region ap-southeast-2 \
+  --name brain-tasks-cluster
 ```
 
-Jenkins performs the following deployment operations:
+Verify the cluster and nodes:
 
-1. Checks the GitHub repository.
-2. Detects changes in the `main` branch.
-3. Retrieves the latest project version.
-4. Builds the Docker image.
-5. Removes/replaces the previous application container when required.
-6. Starts the latest Docker container.
-7. Serves the application through Nginx.
-8. Makes the local deployment available through port `8080`.
-
----
-
-# 🚀 Jenkins Declarative Pipeline
-
-The `Jenkinsfile` is tracked in the GitHub `main` branch. The Jenkins Pipeline job is named **`brain-tasks-pipeline`**.
-
-| Stage | Action |
-|---|---|
-| Checkout | Retrieves source code using `checkout scm` |
-| Verify Docker | Runs Docker version and container checks |
-| Stop Old Container | Removes `brain-tasks-live` if present |
-| Build Docker Image | Builds `brain-tasks-app:latest` |
-| Deploy Container | Starts `brain-tasks-live` with port mapping `8080:80` |
-| Verify Deployment | Lists Docker containers matching the application name |
-
-The `post` section logs success, failure, and completion messages. A Jenkins Pipeline run completed successfully and reported the application at `http://localhost:8080`.
-
-**Scope:** This pipeline builds and deploys Docker **locally**. It does not currently push an image to AWS ECR or deploy to AWS EKS. The container-list check does not by itself confirm HTTP application health.
-
----
-
-# 🔁 Jenkins Poll SCM
-
-Jenkins Poll SCM is configured to automatically check the GitHub repository for changes.
-
-### Poll SCM Schedule
-
-```text
-H/5 * * * *
+```bash
+kubectl config current-context
+kubectl get nodes
+kubectl get namespaces
 ```
 
-This configuration allows Jenkins to periodically check the repository.
+The worker nodes should report `Ready`.
 
-The workflow becomes:
+## Kubernetes Deployment
 
-```text
-Code Change
-    ↓
-Git Commit
-    ↓
-Git Push
-    ↓
-GitHub main Branch
-    ↓
-Jenkins Poll SCM
-    ↓
-Change Detected
-    ↓
-Automatic Jenkins Build
-    ↓
-Docker Image Build
-    ↓
-Container Deployment
-```
+A Deployment manages the application Pods. Ensure the container port and health checks match the application.
 
-This removes the need to manually trigger Jenkins after every Git push.
-
----
-
-# 🐳 Docker Containerization
-
-Docker is used to package and run the production application.
-
-The application uses an Nginx-based Docker image.
-
-### Docker Version Used
-
-```text
-Docker 29.8.2
-```
-
----
-
-# 📄 Dockerfile
-
-The project uses the following Dockerfile:
-
-```dockerfile
-FROM nginx:alpine
-
-RUN rm -rf /usr/share/nginx/html/*
-
-COPY dist /usr/share/nginx/html
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
-```
-
----
-
-## Dockerfile Explanation
-
-### Base Image
-
-```dockerfile
-FROM nginx:alpine
-```
-
-Uses the lightweight Alpine-based Nginx image.
-
-### Remove Default Nginx Files
-
-```dockerfile
-RUN rm -rf /usr/share/nginx/html/*
-```
-
-Removes the default Nginx HTML files.
-
-### Copy Application
-
-```dockerfile
-COPY dist /usr/share/nginx/html
-```
-
-Copies the production build from the `dist` directory into the Nginx web root.
-
-### Expose Port
-
-```dockerfile
-EXPOSE 80
-```
-
-The Nginx server listens on port `80` inside the Docker container.
-
-### Start Nginx
-
-```dockerfile
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-Starts Nginx in the foreground when the container starts.
-
----
-
-# 🌐 Nginx Web Server
-
-Nginx is used to serve the production frontend application inside the Docker container.
-
-The application files are served from:
-
-```text
-/usr/share/nginx/html
-```
-
-Internal container port:
-
-```text
-80
-```
-
-Host port:
-
-```text
-8080
-```
-
-Therefore, the local Docker application is available at:
-
-```text
-http://localhost:8080
-```
-
----
-
-# 🐳 Docker Compose
-
-The project includes a `docker-compose.yml` file.
+Example `deployment.yaml` (replace `containerPort` with the port your app actually listens on):
 
 ```yaml
-version: '3.8'
-
-services:
-  brain-tasks-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:80"
-    restart: unless-stopped
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brain-tasks-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: brain-tasks-app
+  template:
+    metadata:
+      labels:
+        app: brain-tasks-app
+    spec:
+      containers:
+        - name: brain-tasks-app
+          image: 853491227853.dkr.ecr.ap-southeast-2.amazonaws.com/brain-tasks-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
 ```
 
-### Port Mapping
-
-| Environment | Port |
-|---|---:|
-| Host Machine | `8080` |
-| Docker Container | `80` |
-
-Mapping:
-
-```text
-8080:80
-```
-
----
-
-# 🚀 Manual Docker Deployment
-
-Build the Docker image:
+Apply the Deployment and check its status:
 
 ```bash
-docker build -t brain-tasks-app .
+kubectl apply -f deployment.yaml
+kubectl rollout status deployment/brain-tasks-app
+kubectl get deployments
+kubectl get pods -o wide
 ```
 
-Run the application:
+## Kubernetes Service
+
+A `LoadBalancer` Service asks AWS to provision a load balancer for external traffic.
+
+Example `service.yaml` (ensure `targetPort` matches the container's listening port):
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: brain-tasks-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: brain-tasks-app
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+```
+
+Apply and inspect it:
 
 ```bash
-docker run -d --name brain-tasks-live -p 8080:80 brain-tasks-app
+kubectl apply -f service.yaml
+kubectl get services
+kubectl describe service brain-tasks-service
 ```
 
-Check running containers:
+Wait for the `EXTERNAL-IP` field to show the load balancer hostname. Then visit:
+
+```text
+http://a423d723667e04e18a592adf6030d8ea-554931457.ap-southeast-2.elb.amazonaws.com
+```
+
+If your app requires HTTPS, configure TLS and an appropriate ingress/load-balancer setup rather than assuming the HTTP endpoint is secure.
+
+## Useful Kubernetes Commands
 
 ```bash
-docker ps
+# Overview
+kubectl get all
+kubectl get nodes
+kubectl get pods -o wide
+kubectl get deployments
+kubectl get services
+
+# Application logs
+kubectl logs deployment/brain-tasks-app
+kubectl logs -l app=brain-tasks-app --tail=100
+
+# Inspect resources and events
+kubectl describe deployment brain-tasks-app
+kubectl describe service brain-tasks-service
+kubectl get events --sort-by=.metadata.creationTimestamp
+
+# Restart and monitor a rollout
+kubectl rollout restart deployment/brain-tasks-app
+kubectl rollout status deployment/brain-tasks-app
+
+# Roll back a Deployment when a previous revision exists
+kubectl rollout undo deployment/brain-tasks-app
 ```
 
-Open the local application:
+## Troubleshooting
 
-```text
-http://localhost:8080
-```
-
-Stop the container:
+### Pod is not starting
 
 ```bash
-docker stop brain-tasks-live
+kubectl get pods
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+kubectl get events --sort-by=.metadata.creationTimestamp
 ```
 
-Remove the container:
+Check the image URI, container port, application startup command, resource requests, and configuration.
+
+### `ImagePullBackOff` or `ErrImagePull`
+
+- Confirm the image exists in ECR and the URI is correct.
+- Check that the EKS worker-node IAM role can pull from ECR.
+- Verify the cluster and repository are in the expected AWS Region.
+- Review Pod events with `kubectl describe pod <pod-name>`.
+
+### Service has no external hostname
 
 ```bash
-docker rm brain-tasks-live
+kubectl get service brain-tasks-service
+kubectl describe service brain-tasks-service
+kubectl get pods --show-labels
 ```
 
----
+Check that the Service selector matches the Pod labels and that AWS load-balancer provisioning has completed. Also verify the required subnet tags, IAM permissions, and AWS Load Balancer Controller or cloud-provider configuration for your cluster setup.
 
-# 🔗 Jenkins and Docker Integration
+### The hostname opens but the app does not load
 
-Jenkins runs as a Windows service using the `LocalSystem` account.
-
-The Docker executable used by Jenkins is:
-
-```text
-C:\Users\1crore\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe
-```
-
-Docker can be verified from Jenkins using:
-
-```bat
-"C:\Users\1crore\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe" --version
-```
-
-Running containers can be checked using:
-
-```bat
-"C:\Users\1crore\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe" ps
-```
-
-This allows Jenkins to communicate with Docker Desktop and perform automated container deployments.
-
----
-
-# 🌍 GitHub Pages Deployment
-
-GitHub Pages provides the public deployment URL for the Brain Tasks frontend.
-
-The production build is located inside:
-
-```text
-dist/
-```
-
-The `dist` directory is published to:
-
-```text
-gh-pages
-```
-
-using:
+- Confirm the application is listening on the configured container port.
+- Confirm `targetPort` matches that port.
+- Check Pod logs and Service endpoints:
 
 ```bash
-git subtree push --prefix dist origin gh-pages
+kubectl get endpoints brain-tasks-service
+kubectl logs deployment/brain-tasks-app
 ```
 
----
+- Check security groups, network ACLs, and application-level errors.
 
-# ⚙️ GitHub Pages Configuration
+## CI/CD Ideas
 
-GitHub Pages is configured with:
+A CI/CD pipeline (for example, Jenkins, GitHub Actions, or AWS CodePipeline) can automate:
 
-| Setting | Value |
-|---|---|
-| Source | Deploy from a branch |
-| Branch | `gh-pages` |
-| Folder | `/(root)` |
+1. Checkout source code.
+2. Run tests and quality checks.
+3. Build the Docker image.
+4. Authenticate to ECR using an approved AWS identity.
+5. Push an image tagged with the commit SHA or release version.
+6. Update the Kubernetes Deployment image.
+7. Wait for rollout completion and run a smoke test.
 
-### Public Live URL
+For repeatable releases, prefer immutable image tags such as a Git commit SHA instead of relying only on `latest`. Store credentials in a secret manager or the CI platform's credential store; never hard-code them in a pipeline file.
 
-```text
-https://theresa23-2025.github.io/Brain-Tasks-App/
-```
+## Security and Operations
 
----
+- Do not commit AWS credentials, kubeconfig files, tokens, or secrets.
+- Use least-privilege IAM roles and short-lived credentials where possible.
+- Use resource requests and limits appropriate for the workload.
+- Add readiness and liveness probes after confirming the correct health endpoint.
+- Configure TLS for production traffic.
+- Add monitoring, log retention, alerting, and backups where applicable.
+- Restrict inbound access when public access is not required.
+- Review AWS billing and remove unused resources.
 
-# 🛣️ React Router Configuration
+## Cleanup
 
-The application uses client-side routing.
-
-GitHub Pages hosts the project under:
-
-```text
-/Brain-Tasks-App/
-```
-
-Therefore, the deployed router is configured with the project basename:
-
-```text
-basename="/Brain-Tasks-App"
-```
-
-This allows the application to correctly recognize the GitHub Pages project path.
-
-The application contains routes including:
-
-```text
-/
-/createTask
-/updateTask/:id
-```
-
----
-
-# 📦 GitHub Pages Asset Configuration
-
-The application JavaScript and CSS files are located inside:
-
-```text
-dist/assets/
-```
-
-The deployed `index.html` uses project-relative asset paths.
-
-Example:
-
-```html
-<script
-  type="module"
-  crossorigin
-  src="./assets/index-BHGiHu50.js">
-</script>
-
-<link
-  rel="stylesheet"
-  crossorigin
-  href="./assets/index-DPTLVrPB.css"
-/>
-```
-
-Relative asset paths ensure the production assets are loaded correctly from the GitHub Pages project directory.
-
----
-
-# ☁️ AWS ECR — Docker Image Registry
-
-An AWS Elastic Container Registry (ECR) repository named **`brain-tasks-app`** was created in the **`ap-southeast-2`** region. A Docker image with tag **`latest`** was uploaded successfully.
-
-| Setting | Recorded value |
-|---|---|
-| Service | Amazon Elastic Container Registry (ECR) |
-| Repository | `brain-tasks-app` |
-| AWS Region | `ap-southeast-2` (Sydney) |
-| Image Tag | `latest` |
-| Upload Status | Completed |
-| Evidence | `ScreenShot/10-AWS-ECR-Docker-Image.png` |
-
-The full ECR registry URI/account ID is intentionally omitted here because it was not provided in the verified project details. The AWS ECR upload was completed separately from the local Jenkinsfile pipeline.
-
----
-
-# ☸️ AWS EKS — Attempted, Not Deployed
-
-An EKS cluster named **`brain-tasks-cluster`** was created during exploration. The managed node group did not join the Kubernetes cluster successfully (`NodeCreationFailure`). An earlier instance-type selection was also unsuitable for the intended Free Tier setup.
-
-To avoid ongoing AWS costs, the EKS cluster was **deleted**. Therefore:
-
-- **EKS production deployment:** Not completed
-- **Kubernetes worker nodes:** Not operational
-- **AWS Load Balancer:** Not deployed
-- **CloudWatch application monitoring:** Not configured
-- **AWS ECR image:** Retained in the repository
-
-The working application deployments are the local Docker/Nginx container and the public GitHub Pages site. Do not describe EKS as a successful deployment.
-
----
-
-# 📂 Project Structure
-
-```text
-Brain-Tasks-App/
-│
-├── dist/
-│   │
-│   ├── index.html
-│   ├── vite.svg
-│   │
-│   └── assets/
-│       ├── index-BHGiHu50.js
-│       └── index-DPTLVrPB.css
-│
-├── ScreenShot/
-│
-├── .dockerignore
-├── docker-compose.yml
-├── Dockerfile
-├── Jenkinsfile
-└── README.md
-```
-
----
-
-# 🚀 Complete Deployment Procedure
-
-## Step 1 — Check Changes
+Delete the Kubernetes Service first to release its associated load balancer, then remove the application resources if they are no longer needed:
 
 ```bash
-git status
+kubectl delete service brain-tasks-service
+kubectl delete deployment brain-tasks-app
 ```
 
-## Step 2 — Stage Changes
+If the EKS cluster was created only for this project and you no longer need it, delete it using your approved process. For an `eksctl`-managed cluster, the command may be:
 
 ```bash
-git add .
+eksctl delete cluster --name brain-tasks-cluster --region ap-southeast-2
 ```
 
-## Step 3 — Commit
+Before deleting anything, confirm the cluster is not shared and that you no longer need its workloads or data. Also review and remove unused ECR images/repositories if appropriate. Deleting resources is irreversible for some data, so verify first.
 
-```bash
-git commit -m "Update Brain Tasks App"
-```
+## License
 
-## Step 4 — Push to GitHub
-
-```bash
-git push origin main
-```
-
-## Step 5 — Jenkins Detects Changes
-
-Jenkins Poll SCM checks GitHub and automatically starts a deployment when a new commit is detected.
-
-## Step 6 — Docker Deployment
-
-Jenkins builds the latest Docker image and starts the application container.
-
-Local deployment:
-
-```text
-http://localhost:8080
-```
-
-## Step 7 — Publish GitHub Pages
-
-Publish the production `dist` directory:
-
-```bash
-git subtree push --prefix dist origin gh-pages
-```
-
-## Step 8 — Public Deployment
-
-Open:
-
-```text
-https://theresa23-2025.github.io/Brain-Tasks-App/
-```
-
----
-
-# 🔍 Deployment Verification
-
-## Verify Public Website
-
-```bash
-curl -I https://theresa23-2025.github.io/Brain-Tasks-App/
-```
-
-Successful response:
-
-```text
-HTTP/1.1 200 OK
-```
-
-## Verify JavaScript Asset
-
-```bash
-curl -I https://theresa23-2025.github.io/Brain-Tasks-App/
-```
-
-For JavaScript assets, inspect the current deployed `index.html` and test its actual `assets/` URL; hashed filenames can change with new builds.
-
-```bash
-# Example only; replace with the current hashed filename
-curl -I https://theresa23-2025.github.io/Brain-Tasks-App/assets/<current-file>.js
-```
-
-Successful response:
-
-```text
-HTTP/1.1 200 OK
-```
-
----
-
-# 🧰 Tools Used
-
-## Git
-
-Used for:
-
-- Version control
-- Tracking project changes
-- Creating commits
-- Managing branches
-- Pushing code to GitHub
-
-## GitHub
-
-Used for:
-
-- Remote source-code storage
-- Main project branch
-- Deployment branch
-- GitHub Pages hosting
-
-## Jenkins
-
-Used for:
-
-- CI/CD automation
-- Repository monitoring
-- Automatic build triggering
-- Docker build execution
-- Local application deployment
-
-## Jenkins Poll SCM
-
-Used for:
-
-- Periodically checking GitHub
-- Detecting new commits
-- Automatically triggering Jenkins builds
-
-## Docker
-
-Used for:
-
-- Containerization
-- Packaging the application
-- Creating a reproducible deployment environment
-
-## Docker Compose
-
-Used for:
-
-- Defining the application container
-- Port mapping
-- Container restart configuration
-
-## Nginx
-
-Used for:
-
-- Serving production frontend files
-- Running the web application inside Docker
-
-## GitHub Pages
-
-Used for:
-
-- Public static application hosting
-- Providing the permanent public project URL
-
-## React Router
-
-Used for:
-
-- Frontend routing
-- Navigation between application pages
-- GitHub Pages project-path routing
-
----
-
-# 🔧 Troubleshooting
-
-## GitHub Pages Shows a Blank Page
-
-Check the browser Developer Tools Console.
-
-If the following appears:
-
-```text
-No routes matched location "/Brain-Tasks-App/"
-```
-
-verify that the router uses:
-
-```text
-basename="/Brain-Tasks-App"
-```
-
----
-
-## CSS or JavaScript Does Not Load
-
-Verify the production asset paths.
-
-Correct:
-
-```text
-./assets/
-```
-
-Incorrect for this project deployment:
-
-```text
-/assets/
-```
-
----
-
-## Jenkins Cannot Find Docker
-
-If Jenkins cannot recognize the `docker` command, use the full Docker executable path:
-
-```text
-C:\Users\1crore\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe
-```
-
----
-
-## Check Docker Containers
-
-```bash
-docker ps
-```
-
-The Brain Tasks application container should appear in the running container list.
-
----
-
-## GitHub Pages Does Not Show Latest Changes
-
-Publish the latest production files again:
-
-```bash
-git subtree push --prefix dist origin gh-pages
-```
-
-After deployment completes, perform a browser hard refresh:
-
-```text
-Ctrl + F5
-```
-
----
-
-# 🔐 Branch Strategy
-
-| Branch | Purpose |
-|---|---|
-| `main` | Main project and deployment configuration |
-| `gh-pages` | Production files for public GitHub Pages deployment |
-
----
-
-# 📊 Deployment Summary
-
-| Component | Status | Purpose |
-|---|---|---|
-| Git |  Working | Version control |
-| GitHub |  Working | Source repository |
-| Jenkins |  Working | CI/CD automation |
-| Jenkinsfile Pipeline | Successful run | Local Docker deployment |
-| AWS ECR | Image uploaded | Docker image registry |
-| AWS EKS | Not deployed; cluster deleted | Attempted Kubernetes deployment |
-| AWS Load Balancer | Not deployed | No active load balancer |
-| CloudWatch Monitoring | Not configured | No application monitoring setup |
-| Poll SCM |  Working | Automatic change detection |
-| Docker |  Working | Containerization |
-| Nginx |  Working | Web server |
-| Local Deployment |  Working | Docker-hosted application |
-| GitHub Pages |  Working | Public hosting |
-| React Router |  Configured | GitHub Pages routing |
-| Public Deployment |  Live | Production application |
-
----
-
-# 🔗 Important URLs
-
-### GitHub Repository
-
-```text
-https://github.com/Theresa23-2025/Brain-Tasks-App
-```
-
-### Public Live Application
-
-```text
-https://theresa23-2025.github.io/Brain-Tasks-App/
-```
-
-### Jenkins Dashboard
-
-```text
-http://localhost:8081
-```
-
-### Local Docker Deployment
-
-```text
-http://localhost:8080
-```
-
----
-
-#  Final Deployment Status
-
-The **local Docker/Nginx CI/CD workflow and public GitHub Pages deployment** have been successfully completed. AWS ECR image upload is complete; AWS EKS deployment was attempted but not completed.
-
-### Completed
-
--  Git repository configured
--  GitHub repository connected
--  Main branch deployment workflow configured
--  Jenkins installed and configured
--  Jenkins Git integration completed
--  Jenkins Docker integration completed
--  Poll SCM configured
--  Automatic Git change detection verified
--  Docker image successfully built
--  Docker container successfully deployed
--  Nginx serving production application
--  Local application deployment working
--  `gh-pages` branch created
--  GitHub Pages configured
--  Production assets configured
--  React Router project basename configured
--  Public GitHub Pages deployment working
--  Live application successfully available
-
----
-
-# 🎯 Final Workflow
-
-```text
-                    DEVELOPMENT
-                         │
-                         ▼
-                  Local Project
-                         │
-                         ▼
-                        Git
-                         │
-                         ▼
-                GitHub main Branch
-                         │
-              ┌──────────┴──────────┐
-              │                     │
-              ▼                     ▼
-       Jenkins Poll SCM           dist/
-              │                     │
-              ▼                     ▼
-       Jenkins CI/CD          gh-pages Branch
-              │                     │
-              ▼                     ▼
-        Docker Build           GitHub Pages
-              │                     │
-              ▼                     ▼
-      Nginx Container         Public Live App
-              │
-              ▼
-       localhost:8080
-```
-
----
-
-# 👩‍💻 Author
-
-**Theresa**
-
-### Project
-
-**Brain Tasks App**
-
-### DevOps & Deployment Stack
-
-**Git + GitHub + Jenkins + Jenkinsfile + Docker + Docker Compose + Nginx + GitHub Pages + AWS ECR**
-
----
-
-## 🌟 Project Status
-
-**Status:** Successfully deployed locally and on GitHub Pages 
-
-**Local CI/CD:** Working 
-
-**Docker Deployment:** Working 
-
-**Public Deployment:** Live
-
-**AWS ECR:** Image uploaded
-
-**AWS EKS:** Not deployed (cluster deleted) 
-
-### Live Application
-
-https://theresa23-2025.github.io/Brain-Tasks-App/
+Add the license that applies to your source code and dependencies. If this is a personal or learning project, state that explicitly.

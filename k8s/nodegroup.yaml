@@ -1,0 +1,21 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: brain-tasks-cluster
+  region: ap-southeast-2
+
+managedNodeGroups:
+  - name: brain-tasks-nodes
+    instanceType: c7i-flex.large
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 1
+    volumeSize: 20
+    privateNetworking: false
+    subnets:
+      - subnet-0c55256a95428a84a
+      - subnet-0b324ccaf5637446f
+      - subnet-0638dbccfa792bdf0
+    iam:
+      instanceRoleARN: arn:aws:iam::853491227853:role/brain-tasks-eks-node-role
