@@ -1,6 +1,6 @@
 # 🧠 Brain Tasks App
 
-A modern task management web application deployed using a complete DevOps workflow with **GitHub, Jenkins, Docker, Nginx, and GitHub Pages**.
+A modern task management web application deployed using a complete DevOps workflow with **GitHub, Jenkins, Docker, Nginx, GitHub Pages, and AWS ECR**.
 
 The project demonstrates source-code management, automated CI/CD, containerization, web-server deployment, and public static hosting.
 
@@ -83,6 +83,8 @@ The Brain Tasks App provides the following user interface features:
 | Git | Version control |
 | GitHub | Remote source-code repository |
 | Jenkins | CI/CD automation |
+| Jenkinsfile | Declarative CI/CD pipeline definition |
+| AWS ECR | Docker image registry |
 | Poll SCM | Automatic Git change detection |
 | Docker | Application containerization |
 | Docker Compose | Container configuration |
@@ -230,6 +232,25 @@ Jenkins performs the following deployment operations:
 6. Starts the latest Docker container.
 7. Serves the application through Nginx.
 8. Makes the local deployment available through port `8080`.
+
+---
+
+# 🚀 Jenkins Declarative Pipeline
+
+The `Jenkinsfile` is tracked in the GitHub `main` branch. The Jenkins Pipeline job is named **`brain-tasks-pipeline`**.
+
+| Stage | Action |
+|---|---|
+| Checkout | Retrieves source code using `checkout scm` |
+| Verify Docker | Runs Docker version and container checks |
+| Stop Old Container | Removes `brain-tasks-live` if present |
+| Build Docker Image | Builds `brain-tasks-app:latest` |
+| Deploy Container | Starts `brain-tasks-live` with port mapping `8080:80` |
+| Verify Deployment | Lists Docker containers matching the application name |
+
+The `post` section logs success, failure, and completion messages. A Jenkins Pipeline run completed successfully and reported the application at `http://localhost:8080`.
+
+**Scope:** This pipeline builds and deploys Docker **locally**. It does not currently push an image to AWS ECR or deploy to AWS EKS. The container-list check does not by itself confirm HTTP application health.
 
 ---
 
@@ -575,6 +596,39 @@ Relative asset paths ensure the production assets are loaded correctly from the 
 
 ---
 
+# ☁️ AWS ECR — Docker Image Registry
+
+An AWS Elastic Container Registry (ECR) repository named **`brain-tasks-app`** was created in the **`ap-southeast-2`** region. A Docker image with tag **`latest`** was uploaded successfully.
+
+| Setting | Recorded value |
+|---|---|
+| Service | Amazon Elastic Container Registry (ECR) |
+| Repository | `brain-tasks-app` |
+| AWS Region | `ap-southeast-2` (Sydney) |
+| Image Tag | `latest` |
+| Upload Status | Completed |
+| Evidence | `ScreenShot/10-AWS-ECR-Docker-Image.png` |
+
+The full ECR registry URI/account ID is intentionally omitted here because it was not provided in the verified project details. The AWS ECR upload was completed separately from the local Jenkinsfile pipeline.
+
+---
+
+# ☸️ AWS EKS — Attempted, Not Deployed
+
+An EKS cluster named **`brain-tasks-cluster`** was created during exploration. The managed node group did not join the Kubernetes cluster successfully (`NodeCreationFailure`). An earlier instance-type selection was also unsuitable for the intended Free Tier setup.
+
+To avoid ongoing AWS costs, the EKS cluster was **deleted**. Therefore:
+
+- **EKS production deployment:** Not completed
+- **Kubernetes worker nodes:** Not operational
+- **AWS Load Balancer:** Not deployed
+- **CloudWatch application monitoring:** Not configured
+- **AWS ECR image:** Retained in the repository
+
+The working application deployments are the local Docker/Nginx container and the public GitHub Pages site. Do not describe EKS as a successful deployment.
+
+---
+
 # 📂 Project Structure
 
 ```text
@@ -594,6 +648,7 @@ Brain-Tasks-App/
 ├── .dockerignore
 ├── docker-compose.yml
 ├── Dockerfile
+├── Jenkinsfile
 └── README.md
 ```
 
@@ -674,7 +729,14 @@ HTTP/1.1 200 OK
 ## Verify JavaScript Asset
 
 ```bash
-curl -I https://theresa23-2025.github.io/Brain-Tasks-App/assets/index-BHGiHu50.js
+curl -I https://theresa23-2025.github.io/Brain-Tasks-App/
+```
+
+For JavaScript assets, inspect the current deployed `index.html` and test its actual `assets/` URL; hashed filenames can change with new builds.
+
+```bash
+# Example only; replace with the current hashed filename
+curl -I https://theresa23-2025.github.io/Brain-Tasks-App/assets/<current-file>.js
 ```
 
 Successful response:
@@ -854,6 +916,11 @@ Ctrl + F5
 | Git |  Working | Version control |
 | GitHub |  Working | Source repository |
 | Jenkins |  Working | CI/CD automation |
+| Jenkinsfile Pipeline | Successful run | Local Docker deployment |
+| AWS ECR | Image uploaded | Docker image registry |
+| AWS EKS | Not deployed; cluster deleted | Attempted Kubernetes deployment |
+| AWS Load Balancer | Not deployed | No active load balancer |
+| CloudWatch Monitoring | Not configured | No application monitoring setup |
 | Poll SCM |  Working | Automatic change detection |
 | Docker |  Working | Containerization |
 | Nginx |  Working | Web server |
@@ -894,7 +961,7 @@ http://localhost:8080
 
 #  Final Deployment Status
 
-The Brain Tasks App deployment workflow has been successfully completed.
+The **local Docker/Nginx CI/CD workflow and public GitHub Pages deployment** have been successfully completed. AWS ECR image upload is complete; AWS EKS deployment was attempted but not completed.
 
 ### Completed
 
@@ -963,19 +1030,23 @@ The Brain Tasks App deployment workflow has been successfully completed.
 
 ### DevOps & Deployment Stack
 
-**Git + GitHub + Jenkins + Docker + Docker Compose + Nginx + GitHub Pages**
+**Git + GitHub + Jenkins + Jenkinsfile + Docker + Docker Compose + Nginx + GitHub Pages + AWS ECR**
 
 ---
 
 ## 🌟 Project Status
 
-**Status:** Successfully Deployed 
+**Status:** Successfully deployed locally and on GitHub Pages 
 
-**CI/CD:** Working 
+**Local CI/CD:** Working 
 
 **Docker Deployment:** Working 
 
-**Public Deployment:** Live 
+**Public Deployment:** Live
+
+**AWS ECR:** Image uploaded
+
+**AWS EKS:** Not deployed (cluster deleted) 
 
 ### Live Application
 
